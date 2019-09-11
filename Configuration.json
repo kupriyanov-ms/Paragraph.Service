@@ -1,0 +1,20 @@
+{
+  "PollingInterval": 30, // Интервал опроса оборудования (секунд).
+  // Адрес очереди, порт, имя пользователя, пароль, точка обмена.
+  "ESBHost": "rabbitmq.baikalinc.ru",
+  "ESBPort": 5672,
+  "ESBUser": "service",
+  "ESBPass": "12345",
+  "ESBExchange": "monitoring",
+  // Имя очереди
+  "ESBRoutingKey": "monitoring.equipment",
+  // Разрешить публикацию сообщений в очередь.
+  "ESBPublish": true,
+  // Имя сервиса для идентификации отправителя сообщения.
+  "ServiceName": "Paragraph",
+  "APIHost": "webora.baikalinc.ru",
+  "APIPort": 443,
+  "APIScheme": "https",
+  // Идентификатор COM порта с подключенными Термодатами.
+  "COMPort": "COM5"
+}
