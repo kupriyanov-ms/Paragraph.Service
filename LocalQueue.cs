@@ -1,10 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using Newtonsoft.Json;
 
 namespace Paragraph.Service
 {
@@ -14,17 +11,20 @@ namespace Paragraph.Service
     public class LocalQueue
     {
         /// <summary>
-        /// Имя файла для хранения очереди.
+        /// Имя файла с локальной очередью.
         /// </summary>
         private const string QueueFileName = "LocalQueue.json";
+
         /// <summary>
         /// Локальная очередь сообщений.
         /// </summary>
         public Queue<string> LocalTempQueue { get; private set; }
+
         /// <summary>
-        /// Количество сообщений в очереди.
+        /// Количество сообщений в локальной очереди.
         /// </summary>
         public int Count { get; set; }
+
         /// <summary>
         /// Создание локальной очереди сообщений.
         /// </summary>
@@ -43,9 +43,9 @@ namespace Paragraph.Service
         }
 
         /// <summary>
-        /// Добавить сообщение очередь.
+        /// Добавить сообщение в очередь.
         /// </summary>
-        /// <param name="Message"></param>
+        /// <param name="Message">Строка с ответом от оборудования.</param>
         public void Enqueue(string Message)
         {
             LocalTempQueue.Enqueue(Message);
@@ -55,16 +55,17 @@ namespace Paragraph.Service
         /// <summary>
         /// Извлечь сообщение из очереди.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Строка с состоянием оборудования.</returns>
         public string Dequeue()
         {
             Count = LocalTempQueue.Count;
             return LocalTempQueue.Dequeue();
         }
+
         /// <summary>
         /// Определить сохранена ли очередь на диске.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true - есть сообщения в локальной очереди, false - локальная очередь пуста.</returns>
         public bool QueueFileExists()
         {
             if (File.Exists(QueueFileName))
@@ -80,7 +81,7 @@ namespace Paragraph.Service
         /// <summary>
         /// Сохранить локальную очередь сообщений на диске.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true - локальная очередь сохранена.</returns>
         public bool SaveQueue()
         {
             // Сохранить очередь на диске, если она не пустая.
@@ -111,9 +112,9 @@ namespace Paragraph.Service
         }
 
         /// <summary>
-        /// Считать очередь сообщений из диска, если очередь пустая.
+        /// Прочитать очередь сообщений с диска, если локальная очередь пустая.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true - сообщения загружены в локальную очередь.</returns>
         public bool LoadQueue()
         {
             // Считать информацию из временного файла в очередь, если она пустая.
@@ -132,6 +133,7 @@ namespace Paragraph.Service
                             Count = LocalTempQueue.Count;
                             Console.WriteLine($"Load {Count} local message(s) from {QueueFileName}. {QueueFileName} deleted.");
                         }
+
                         return true;
                     }
                     else

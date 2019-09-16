@@ -13,11 +13,13 @@ namespace Paragraph.Service
     {
         private static readonly HttpClient HttpClient;
         private UriBuilder Url;
+
         static WebApi()
         {
             HttpClient = new HttpClient();
             HttpClient.Timeout = new TimeSpan(hours: 0, minutes: 0, seconds: 5);
         }
+
         public WebApi(Configuration config)
         {
             Url = new UriBuilder();
@@ -25,13 +27,14 @@ namespace Paragraph.Service
             Url.Host = config.APIHost;
             Url.Port = config.APIPort;
         }
+
         /// <summary>
         /// Получить словарь подключенного оборудования.
         /// </summary>
         /// <param name="cncType">Тип оборудования.</param>
-        /// <param name="dictMachineTool">Словарь со станками.</param>
-        /// <remarks>Ключом словаря является инвентарный номер станка.</remarks>
-        /// <returns>Успешное выполнение запроса.</returns>
+        /// <param name="dictMachineTool">Словарь с оборудованием в мониторинге.</param>
+        /// <remarks>Ключом словаря ИД оборудования.</remarks>
+        /// <returns>True - успешное выполнение запроса.</returns>
         public bool GetMachineTools(CNCType? cncType, out Dictionary<long, MachineTool> dictMachineTool)
         {
             var isOk = false;
@@ -42,6 +45,7 @@ namespace Paragraph.Service
             {
                 Url.Query = $"type={(int)cncType.Value}";
             }
+
             // Загрузка оборудования из web API
             using (var response = HttpClient.GetAsync(Url.ToString()).Result)
             {
