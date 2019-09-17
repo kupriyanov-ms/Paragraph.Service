@@ -1,6 +1,5 @@
 ﻿using Modbus.Device;
 using Modbus.Utility;
-using System;
 using System.IO.Ports;
 
 namespace Paragraph.Service
@@ -18,44 +17,70 @@ namespace Paragraph.Service
         /// Значение температуры, измеренной на 1 и 2 канале.
         /// </summary>
         public float[] Temperatures { get; set; }
+
         /// <summary>
         /// Тип сенсоров, подключенных к 1 и 2 каналу.
         /// </summary>
         public ushort[] SensorsType { get; set; }
+
         /// <summary>
-        /// Скорость передачи данных по интерфейсу RS485 бит/с.
+        /// Скорость передачи данных по интерфейсу RS485 бод/с.
         /// </summary>
-        public ushort rs485_speed { get; set; }
+        public ushort Rs485Speed { get; set; }
+
         /// <summary>
         /// Бит данных.
         /// </summary>
-        public ushort rs485_bytes { get; set; }
+        public ushort Rs485Bytes { get; set; }
+
         /// <summary>
         /// Четность: да, нет.
         /// </summary>
-        public ushort rs485_parity { get; set; }
+        public ushort Rs485Parity { get; set; }
+
         /// <summary>
         /// Количество стоповых бит, RS485.
         /// </summary>
-        public ushort rs485_stopbits { get; set; }
+        public ushort Rs485Stopbits { get; set; }
+
         /// <summary>
         /// Дата/время установленные в приборе: dd:mm:yy hh:mm:ss.
         /// </summary>
-        public ushort day { get; set; }
-        public ushort month { get; set; }
-        public ushort year { get; set; }
-        public ushort hour { get; set; }
-        public ushort minute { get; set; }
-        public ushort second { get; set; }
+        public ushort Day { get; set; }
+
+        /// <summary>
+        /// Месяц.
+        /// </summary>
+        public ushort Month { get; set; }
+
+        /// <summary>
+        /// Год.
+        /// </summary>
+        public ushort Year { get; set; }
+
+        /// <summary>
+        /// Час.
+        /// </summary>
+        public ushort Hour { get; set; }
+
+        /// <summary>
+        /// Минуты.
+        /// </summary>
+        public ushort Minute { get; set; }
+
+        /// <summary>
+        /// Секунды.
+        /// </summary>
+        public ushort Second { get; set; }
 
         /// <summary>
         /// Получить название датчика по типу.
         /// </summary>
-        /// <param name="sensorType">Тип датчика</param>
+        /// <param name="sensorType">Тип датчика.</param>
         /// <returns>Название датчика.</returns>
-        static string GetSensorModel(ushort sensorType)
+        public static string GetSensorModel(ushort sensorType)
         {
-            var desc = "";
+            var desc = string.Empty;
             switch (sensorType)
             {
                 default:
@@ -67,10 +92,10 @@ namespace Paragraph.Service
         }
 
         /// <summary>
-        /// 
+        /// Конструктор класса для подключения к измерителю Параграф PL20.
         /// </summary>
-        /// <param name="port"></param>
-        /// <param name="slaveId"></param>
+        /// <param name="port">COM порт для связи.</param>
+        /// <param name="slaveId">ИД ведомого устройства.</param>
         public Paragraph(SerialPort port, byte slaveId)
         {
             // Протокол работы с приборами Параграф PL20 MODBUS RTU.
@@ -83,6 +108,7 @@ namespace Paragraph.Service
             // У Параграф PL20 2 измерительных канала. Адрес регистра 1 канала - 0, тип данных Single, разрядность 32 бит.
             ushort[] inputs = master.ReadInputRegisters(slaveId, 0x0, 4);
             this.Temperatures = new float[2];
+
             // Если значение недоступно, то регистры содержат 0, на дисплее прибора ----.
             this.Temperatures[0] = ModbusUtility.GetSingle(inputs[0], inputs[1]);
             this.Temperatures[1] = ModbusUtility.GetSingle(inputs[2], inputs[3]);

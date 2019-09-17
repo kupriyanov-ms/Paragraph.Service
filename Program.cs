@@ -29,7 +29,6 @@ namespace Paragraph.Service
                         CustomFormatter = new ElasticsearchJsonFormatter()
                     });
 
-
             Log.Logger = serilogConfiguration.CreateLogger();
             services.AddLogging(logger => logger.AddSerilog(dispose: true))
                     .AddTransient<MonitoringQueue>();
@@ -39,8 +38,10 @@ namespace Paragraph.Service
         {
             // Создать коллекцию сервисов.
             var serviceCollection = new ServiceCollection();
+
             // Сконфигурировать сервисы.
             LoggerService(serviceCollection);
+
             // Зарегистрировать провайдер.
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
@@ -60,6 +61,7 @@ namespace Paragraph.Service
 
             // Создать локальную очередь сообщений.
             LocalQueue localQueue = new LocalQueue();
+
             // Если есть сохраненные сообщения.
             if (localQueue.QueueFileExists())
             {
@@ -90,14 +92,15 @@ namespace Paragraph.Service
             }
 
             Log.Information("Start Paragraph monitoring.");
+
             // Выполнить обработку оборудования.
             while (true)
             {
-                var StartIteration = DateTime.Now;
-                var OfflineMachines = 0;
-                List<string> Messages = new List<string>();
+                var startIteration = DateTime.Now;
+                var offlineMachines = 0;
+                List<string> messages = new List<string>();
 
-                Log.Information($"{StartIteration.ToString("dd.MM.yyyy HH:mm:ss")} Start iteration.");
+                Log.Information($"{startIteration.ToString("dd.MM.yyyy HH:mm:ss")} Start iteration.");
 
                 // Обработать список оборудования.
                 foreach (var machineTool in configuration.MachineTools)
@@ -115,6 +118,9 @@ namespace Paragraph.Service
                     // Проверить доступность устройства и запросить параметры.
                     try
                     {
+                        // TODO m.s.kupriyanov: продумать формат сообщения для многоканальных устройств-измерителей.
+
+                        // Получить значение температуры на каждом из 2-х каналов устройства-измерителя.
                         Paragraph paragraphPL20 = new Paragraph(port, Convert.ToByte(machine.CNCHost));
                         temperatures.Add(Math.Round(paragraphPL20.Temperatures[0], 1));
                         temperatures.Add(Math.Round(paragraphPL20.Temperatures[1], 1));
@@ -129,6 +135,15 @@ namespace Paragraph.Service
                          * 2 канал - 1 зона
                          */
 
+                        // TODO m.s.kupriyanov: в данный момент имеется 2 прокалочных печи и 2 печи нормализации.
+                        // У каждой из прокалочных печей 3 зоны контроля. Для этого используется по 2 2-х канальных
+                        // прибора-регистратора: один из них контролирует 2 зоны (задействованы оба канала) и второй
+                        // контролирует 1 зону (второй канал не задействован).
+                        // Можно задействовать 3 прибора и 1 высвободить.
+                        // Для контроля температуры в печах нормализации используется 1 2-х канальный прибор.
+                        // В справочнике Оборудования в данный момент нет сведений оборудование-приборы контроля, поэтому
+                        // необходимость в опросе еще одного прибора для контроля 3-го канала измерения температуры задана
+                        // на уровне программного кода.
                         if (Convert.ToInt32(machine.CNCHost) == 1)
                         {
                             Paragraph paragraph2 = new Paragraph(port, 2);
@@ -136,12 +151,17 @@ namespace Paragraph.Service
                             temperatures.Add(Math.Round(paragraph2.Temperatures[1], 1));
                         }
 
+                        // Выполнить сортировку полученных измерений температур.
                         temperatures.Sort();
                         temp = temperatures.Last();
 
                         if (temp > 0)
                         {
                             status = (int)CNCStatus.START;
+                        }
+                        else
+                        {
+                            status = (int)CNCStatus.STOP;
                         }
 
                         statusDesc = $"{((CNCStatus)status).ToString()} Temp: {temp} C";
@@ -150,9 +170,9 @@ namespace Paragraph.Service
                     {
                         Log.Warning($"Paragraph PL20 #{machineTool.Key} offline. Err: {ex.Message}");
                         status = (int)CNCStatus.OFFLINE;
+                        statusDesc = status.ToString();
                         temp = 0;
-                        statusDesc = CNCStatus.OFFLINE.ToString();
-                        ++OfflineMachines;
+                        ++offlineMachines;
                     }
 
                     // Сформировать сообщение для отправки в очередь.
@@ -160,6 +180,8 @@ namespace Paragraph.Service
                     {
                         CNCType = (byte)CNCType.Paragraph,
                         EventTime = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+
+                        // Максимальное значение измеренной температуры.
                         Temperature = (float)temp,
                         IdMachine = machineTool.Key,
                         Status = status,
@@ -167,19 +189,18 @@ namespace Paragraph.Service
                     };
 
                     string message = JsonConvert.SerializeObject(messageInfo);
-                    Messages.Add(message);
+                    messages.Add(message);
 
                     Log.Information(message);
-
                     Log.Information($"Paragraph id{machineTool.Key}-#{machine.CNCHost}. Status: {statusDesc}. Dur: {(DateTime.Now.Ticks - start) / 10000} ms.");
                 }
 
-                var AllMachine = configuration.MachineTools.Count;
-                Log.Information($"Paragraph in monitoring: {AllMachine}.");
-                Log.Information($"Offline CNC(s): {OfflineMachines}. Online(!): {AllMachine - OfflineMachines}.");
+                var allMachine = configuration.MachineTools.Count;
+                Log.Information($"Paragraph in monitoring: {allMachine}.");
+                Log.Information($"Offline CNC(s): {offlineMachines}. Online(!): {allMachine - offlineMachines}.");
                 Log.Information("Send result to queue.");
 
-                foreach (var message in Messages)
+                foreach (var message in messages)
                 {
                     // TODO m.s.kupriyanov: Здесь нужно агрегировать все полученные результаты и разом отправить в очередь.
                     // Если подключение к очереди доступно.
@@ -220,11 +241,12 @@ namespace Paragraph.Service
                     localQueue.SaveQueue();
                 }
 
-                var EndIteration = DateTime.Now;
-                var IterationDelay = EndIteration - StartIteration;
-                Log.Information($"{EndIteration.ToString("dd.MM.yyyy HH:mm:ss")} End iteration ({IterationDelay.Seconds} sec.).");
+                var endIteration = DateTime.Now;
+                var iterationDelay = endIteration - startIteration;
+                Log.Information($"{endIteration.ToString("dd.MM.yyyy HH:mm:ss")} End iteration ({iterationDelay.Seconds} sec.).");
+
                 // Определить разницу между периодом опроса и длительностью итерации опроса.
-                var deltaDelay = configuration.PollingInterval - IterationDelay.Seconds;
+                var deltaDelay = configuration.PollingInterval - iterationDelay.Seconds;
                 if (deltaDelay <= 0)
                 {
                     // Установить задержку.
@@ -235,15 +257,17 @@ namespace Paragraph.Service
                 // Console.WriteLine($"Pause {DeltaDelay} sec.");
                 Log.Information($"Pause {deltaDelay} sec.");
                 Thread.Sleep(deltaDelay * 1000);
-                Log.Information($"All tasks completed ({(DateTime.Now - StartIteration).Seconds} sec.).");
+                Log.Information($"All tasks completed ({(DateTime.Now - startIteration).Seconds} sec.).");
             }
 
+#pragma warning disable CS0162 // Обнаружен недостижимый код.
             port.Close();
             queue.Close();
             Log.Information("Main end.");
             Console.WriteLine("Paragraph monitoring stopped.");
             Console.WriteLine("Press [Enter] for Exit.");
             Console.ReadLine();
+#pragma warning disable CS0162 // Обнаружен недостижимый код.
         }
     }
 }

@@ -5,7 +5,7 @@ using System.IO;
 namespace Paragraph.Service
 {
     /// <summary>
-    /// Типы контроллера
+    /// Тип контроллера оборудования.
     /// </summary>
     public enum CNCType
     {
@@ -79,7 +79,7 @@ namespace Paragraph.Service
         /// <summary>
         /// Мониторинг приборов-измерителей Параграф PL20.
         /// </summary>
-        Paragraph = 13
+        Paragraph = 13,
         #endregion
     }
 
@@ -88,12 +88,35 @@ namespace Paragraph.Service
     /// </summary>
     public enum CNCStatus
     {
-        UNKNOWN = 0, // Состояние оборудования неизвестно, не соотнесено ни с одним из следующих.
-        START = 1, // Работает под управлением программы.
-        STOP = 2, // Остановлено.
-        HOLD = 3, // Оборудование простаивает.
-        OFFLINE = 4, // Оборудование выключено/недоступно.
-        ONLINE = 5 // Оборудование включено/есть доступ по сети, но определение состояния не реализовано/невозможно.
+        /// <summary>
+        /// Состояние оборудования неизвестно, не соотнесено ни с одним из следующих.
+        /// </summary>
+        UNKNOWN = 0,
+
+        /// <summary>
+        /// Работает под управлением программы.
+        /// </summary>
+        START = 1,
+
+        /// <summary>
+        /// Остановлено.
+        /// </summary>
+        STOP = 2,
+
+        /// <summary>
+        /// Оборудование простаивает.
+        /// </summary>
+        HOLD = 3,
+
+        /// <summary>
+        /// Оборудование выключено/недоступно.
+        /// </summary>
+        OFFLINE = 4,
+
+        /// <summary>
+        /// Оборудование включено/есть доступ по сети, но определение состояния не реализовано/невозможно.
+        /// </summary>
+        ONLINE = 5,
     }
 
     /// <summary>
@@ -105,10 +128,12 @@ namespace Paragraph.Service
         /// Тип контроллера ЧПУ.
         /// </summary>
         public CNCType CNCType { get; set; }
+
         /// <summary>
         /// Адрес для подключения к ЧПУ.
         /// </summary>
         public string CNCHost { get; set; }
+
         /// <summary>
         /// Порт для подключения к ЧПУ.
         /// </summary>
@@ -121,22 +146,27 @@ namespace Paragraph.Service
     public class Configuration
     {
         #region Configuration Fields
+
         /// <summary>
         /// Список ЧПУ.
         /// </summary>
         public Dictionary<long, MachineTool> MachineTools;
+
         /// <summary>
         /// Интервал опроса оборудования, секунд.
         /// </summary>
         public int PollingInterval { get; set; }
+
         /// <summary>
         /// Адрес IMZ_BUS.
         /// </summary>
         public string ESBHost { get; set; }
+
         /// <summary>
         /// Номер порта (IMZ_BUS).
         /// </summary>
         public int ESBPort { get; set; }
+
         /// <summary>
         /// Имя пользователя (IMZ_BUS). 
         /// </summary>
@@ -145,34 +175,42 @@ namespace Paragraph.Service
         /// Пароль пользователя (IMZ_BUS).
         /// </summary>
         public string ESBPass { get; set; }
+
         /// <summary>
         /// Имя точки обмена для отправки сообщений.
         /// </summary>
         public string ESBExchange { get; set; }
+
         /// <summary>
         /// Ключ маршрута.
         /// </summary>
         public string ESBRoutingKey { get; set; }
+
         /// <summary>
         /// Разрешить публикацию сообщений в очередь.
         /// </summary>
         public bool ESBPublish { get; set; }
+
         /// <summary>
         /// Имя сервиса, источника сообщений.
         /// </summary>
         public string ServiceName { get; set; }
+
         /// <summary>
         /// URL адрес web API.
         /// </summary>
         public string APIHost { get; set; }
+
         /// <summary>
         /// Порт web API.
         /// </summary>
         public int APIPort { get; set; }
+
         /// <summary>
         /// Тип подключения.
         /// </summary>
         public string APIScheme { get; set; }
+
         /// <summary>
         /// Виртуальный или физический COM-порт с подключенными Параграф PL20.
         /// </summary>
@@ -183,7 +221,8 @@ namespace Paragraph.Service
         /// Получить настройки приложения из файла Configuration.json.
         /// </summary>
         /// <param name="confFile">Имя конфигурационного файла.</param>
-        /// <returns></returns>
+        /// <param name="cncType">Тип оборудования.</param>
+        /// <returns>Список настроек оборудования.</returns>
         public static Configuration LoadConfig(string confFile, CNCType cncType)
         {
             if (File.Exists(confFile))
