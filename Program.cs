@@ -21,7 +21,7 @@ namespace Paragraph.Service
                   .WriteTo.Console();
 
             serilogConfiguration.WriteTo.Elasticsearch(
-                    new ElasticsearchSinkOptions(new Uri("http://haproxy-ha01.baikalinc.ru:9200/"))
+                    new ElasticsearchSinkOptions(new Uri("http://haproxy-ha01:9200/"))
                     {
                         AutoRegisterTemplate = true,
                         TemplateName = "devlog-scada-paragraph-service",
